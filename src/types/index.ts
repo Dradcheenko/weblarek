@@ -29,7 +29,8 @@ export interface IProducts {
 }
 
 export interface IOrderRequest extends IBuyer {
-  items: IProduct[];
+  items: string[];
+  total: number;
 }
 
 export interface IOrderResponse {
