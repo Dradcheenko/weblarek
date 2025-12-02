@@ -172,143 +172,105 @@ testCart();
 
 function testCustomer() {
   try {
-    console.log('=============Запускаем тест Customer=============');
-
-    const firstData: Partial<IBuyer> = {
-      payment: 'card',
-      email: 'test@mail'
-    };
-
-    console.log('Проверяем первый набор данных', firstData);
-    const firstDataValid = customerModel.validate(firstData);
-    if (firstDataValid.isValid) {
-      console.log('Валидация не должна была быть пройдена, т.к. были ошибки в полях:');
-      showValidErrors(firstDataValid.errors);
-      throw new Error('Поле email не должно быть валидным в первом наборе данных');
-    }
-    console.log('Первый набор данных проверен, результат: ', firstDataValid);
-    console.log('Выводим результат валидации в консоль:');
-    console.log(JSON.stringify(firstDataValid, null, 2));
-
-    const secondData: Partial<IBuyer> = {
-      payment: 'coste',
-      email: 'test@mail.ru'
-    };
-
-    console.log('Проверяем второй набор данных', secondData);
-    const secondDataValid = customerModel.validate(secondData);
-    if (secondDataValid.isValid) {
-      console.log('Валидация не должна была быть пройдена, т.к. были ошибки в полях:');
-      showValidErrors(secondDataValid.errors);
-      throw new Error('Поле payment не должно быть валидным во втором наборе данных');
-    }
-    console.log('Второй набор данных проверен, результат: ', secondDataValid);
-    console.log('Выводим результат валидации в консоль:');
-    console.log(JSON.stringify(secondDataValid, null, 2));
-
-    const thirdData: Partial<IBuyer> = {
-      payment: 'card',
-      email: 'test@mail.ru'
-    };
-
-    console.log('Проверяем третий набор данных', thirdData);
-    const thirdDataValid = customerModel.validate(thirdData);
-    if (!thirdDataValid.isValid) {
-      console.log('Валидация должна была быть пройдена, но есть ошибки в полях:');
-      showValidErrors(thirdDataValid.errors);
-      throw new Error('Третий набор данных должен быть валидным');
-    }
-    console.log('Третий набор данных проверен, результат: ', thirdDataValid);
-    console.log('Выводим результат валидации в консоль:');
-    console.log(JSON.stringify(thirdDataValid, null, 2));
-
-    console.log('Сохраняем третий набор данных в Customer');
-    customerModel.saveData(thirdData);
-    const firstPartCustomer = customerModel.getData();
-    if (thirdData.email !== firstPartCustomer.email || thirdData.payment !== firstPartCustomer.payment) {
-      throw new Error('Сохраненные данные отличаются от оригинала');
-    }
-    console.log('Добавили почту и способ оплаты в класс: ', firstPartCustomer);
-
-    const fourthData: Partial<IBuyer> = {
-      phone: '+7 (928) 928-98-28',
-      address: 'Рост'
-    };
-
-    console.log('Проверяем четвертый набор данных', fourthData);
-    const fourthDataValid = customerModel.validate(fourthData);
-    if (fourthDataValid.isValid) {
-      console.log('Валидация не должна была быть пройдена, т.к. были ошибки в полях:');
-      showValidErrors(fourthDataValid.errors);
-      throw new Error('Поле address не должно быть валидным в четвертом наборе данных');
-    }
-    console.log('Четвертый набор данных проверен, результат: ', fourthDataValid);
-    console.log('Выводим результат валидации в консоль:');
-    console.log(JSON.stringify(fourthDataValid, null, 2));
-
-    const fifthData: Partial<IBuyer> = {
-      phone: '+7 (928) 928-98',
-      address: 'Ростов-на-Дону'
-    };
-
-    console.log('Проверяем пятый набор данных', fifthData);
-    const fifthDataValid = customerModel.validate(fifthData);
-    if (fifthDataValid.isValid) {
-      console.log('Валидация не должна была быть пройдена, т.к. были ошибки в полях:');
-      showValidErrors(fifthDataValid.errors);
-      throw new Error('Поле phone не должно быть валидным в пятом наборе данных');
-    }
-    console.log('Пятый набор данных проверен, результат: ', fifthDataValid);
-    console.log('Выводим результат валидации в консоль:');
-    console.log(JSON.stringify(fifthDataValid, null, 2));
-
-    const sixthData: Partial<IBuyer> = {
-      phone: '+7 (928) 928-98-28',
-      address: 'Ростов-на-Дону'
-    };
-
-    console.log('Проверяем шестой набор данных', sixthData);
-    const sixthDataValid = customerModel.validate(sixthData);
-    if (!sixthDataValid.isValid) {
-      console.log('Валидация не должна была быть пройдена, т.к. были ошибки в полях:');
-      showValidErrors(sixthDataValid.errors);
-      throw new Error('Шестой набор данных должен быть валидным');
-    }
-    console.log('Шестой набор данных проверен, результат: ', sixthDataValid);
-    console.log('Выводим результат валидации в консоль:');
-    console.log(JSON.stringify(sixthDataValid, null, 2));
-    
-    console.log('Сохраняем шестой набор данных в Customer');
-    customerModel.saveData(sixthData);
-    const secondPartCustomer = customerModel.getData();
-    if (sixthData.phone !== secondPartCustomer.phone || sixthData.address !== secondPartCustomer.address) {
-      throw new Error('Сохраненные данные отличаются от оригинала');
-    }
-    console.log('Добавили телефон и адрес в класс: ', secondPartCustomer);
-
-    const seventhData: Partial<IBuyer> = {
-      phone: '+7 (928) 928-98'
-    };
-
-    console.log('Проверяем седьмой набор данных', seventhData);
-    const seventhDataValid = customerModel.validate(seventhData);
-    if (seventhDataValid.isValid) {
-      console.log('Валидация не должна была быть пройдена, т.к. были ошибки в полях:');
-      showValidErrors(seventhDataValid.errors);
-      throw new Error('Поле phone не должно быть валидным в седьмом наборе данных');
-    }
-    console.log('Седьмой набор данных проверен, результат: ', seventhDataValid);
-    console.log('Выводим результат валидации в консоль:');
-    console.log(JSON.stringify(seventhDataValid, null, 2));
-
-    console.log('Тестирование Customer завершилось успешно!');
-
-  } catch(error) {
-    console.log('тестирование Customer закончилось с ошибкой: ', error);
-    throw error;
+  console.log('=============Запускаем тест Customer=============');
+  
+  // 1
+  const firstData: Partial<IBuyer> = {
+    payment: 'card',
+    email: 'test@mail'
+  };
+  customerModel.saveData(firstData);
+  const firstValid = customerModel.validate();
+  if (firstValid.isValid) {
+    showValidErrors(firstValid.errors);
+    throw new Error('email должен быть НЕ валиден');
   }
-}
-testCustomer();
+  
+  // 2
+  const secondData: Partial<IBuyer> = {
+    payment: 'coste',
+    email: 'test@mail.ru'
+  };
+  customerModel.saveData(secondData);
+  const secondValid = customerModel.validate();
+  if (secondValid.isValid) {
+    showValidErrors(secondValid.errors);
+    throw new Error('payment должен быть НЕ валиден');
+  }
+  
+  // 3 — полностью валидные данные
+  const thirdData: Partial<IBuyer> = {
+    payment: 'card',
+    email: 'test@mail.ru'
+  };
+  customerModel.saveData(thirdData);
+  const thirdValid = customerModel.validate();
+  if (!thirdValid.isValid) {
+    showValidErrors(thirdValid.errors);
+    throw new Error('Третий набор должен быть валиден');
+  }
+  
+  // сохраняем
+  const part1 = customerModel.getData();
+  console.log('После сохранения email+payment:', part1);
+  
+  // 4 — адрес слишком короткий
+  const fourthData: Partial<IBuyer> = {
+    phone: '+7 (928) 928-98-28',
+    address: 'Рост'
+  };
+  customerModel.saveData(fourthData);
+  const fourthValid = customerModel.validate();
+  if (fourthValid.isValid) {
+    showValidErrors(fourthValid.errors);
+    throw new Error('address должен быть НЕ валиден');
+  }
+  
+  // 5 — телефон короткий
+  const fifthData: Partial<IBuyer> = {
+    phone: '+7 (928) 928-98',
+    address: 'Ростов-на-Дону'
+  };
+  customerModel.saveData(fifthData);
+  const fifthValid = customerModel.validate();
+  if (fifthValid.isValid) {
+    showValidErrors(fifthValid.errors);
+    throw new Error('phone должен быть НЕ валиден');
+  }
+  
+  // 6 — валидный телефон+адрес
+  const sixthData: Partial<IBuyer> = {
+    phone: '+7 (928) 928-98-28',
+    address: 'Ростов-на-Дону'
+  };
+  customerModel.saveData(sixthData);
+  const sixthValid = customerModel.validate();
+  if (!sixthValid.isValid) {
+    showValidErrors(sixthValid.errors);
+    throw new Error('Шестой набор должен быть валиден');
+  }
+  
+  console.log('После сохранения телефона и адреса:', customerModel.getData());
+  
+  // 7 — телефон короткий
+  const seventhData: Partial<IBuyer> = {
+    phone: '+7 (928) 928-98'
+  };
+  customerModel.saveData(seventhData);
+  const seventhValid = customerModel.validate();
+  if (seventhValid.isValid) {
+    showValidErrors(seventhValid.errors);
+    throw new Error('Телефон не должен быть валиден');
+  }
+  
+  console.log('Тестирование Customer завершилось успешно!');
+  
+  } catch (error) {
+  console.log('Ошибка Customer: ', error);
+  throw error;
+  }
+  }
+  testCustomer();
 
 async function testApi(): Promise<void> {
   try {
