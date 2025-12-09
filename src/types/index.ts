@@ -34,7 +34,8 @@ export interface IOrderRequest extends IBuyer {
 }
 
 export interface IOrderResponse {
-  totalPrice: number;
+  id: string;
+  total: number;
 }
 
 export interface IValidErrors {
@@ -47,4 +48,20 @@ export interface IValidErrors {
 export interface IValidResult {
   isValid: boolean;
   errors: IValidErrors;
+  data: Partial<IBuyer>;
+}
+
+export type TProductCategory = 'софт-скил' | 'хард-скил' | 'кнопка' | 'дополнительное' | 'другое';
+
+export interface IBasketProduct extends IProduct {
+  index: number;
+}
+
+export interface IBasketCount {
+  count: number;
+}
+
+export interface ITimer {
+  delay: number;
+  timeoutId: ReturnType<typeof setTimeout> | null;
 }
