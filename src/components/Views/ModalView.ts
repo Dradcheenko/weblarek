@@ -1,4 +1,5 @@
 import { EventEmitter } from '../base/Events';
+import { ensureElement } from '../../utils/utils';
 
 export class ModalView {
   private container: HTMLElement;
@@ -9,23 +10,9 @@ export class ModalView {
   constructor(eventBroker: EventEmitter) {
     this.eventBroker = eventBroker;
 
-    const container = document.getElementById('modal-container');
-    if (!(container instanceof HTMLElement)) {
-      throw new Error('Контейнер модального окна не найден');
-    }
-    this.container = container;
-
-    const closeButton = this.container.querySelector('.modal__close');
-    if (!(closeButton instanceof HTMLButtonElement)) {
-      throw new Error('Кнопка закрытия модального окна не найдена');
-    }
-    this.closeButton = closeButton;
-
-    const contentElement = this.container.querySelector('.modal__content');
-    if (!(contentElement instanceof HTMLElement)) {
-      throw new Error('DOM-элемент для содержимого модального окна не найден');
-    }
-    this.contentElement = contentElement;
+    this.container = ensureElement<HTMLElement>('#modal-container');
+    this.closeButton = ensureElement<HTMLButtonElement>('.modal__close', this.container);
+    this.contentElement = ensureElement<HTMLElement>('.modal__content', this.container);
   }
 
   open(content: HTMLElement): void {
@@ -37,7 +24,6 @@ export class ModalView {
   close(): void {
     this.container.classList.remove('modal_active');
     this.contentElement.innerHTML = '';
-
     this.eventBroker.emit('modal:close');
   }
 

@@ -1,5 +1,6 @@
 import { Component } from '../base/Component';
 import { IOrderResponse } from '../../types/index';
+import { ensureElement } from '../../utils/utils';
 
 export class SuccessView extends Component<IOrderResponse> {
   private titleElement: HTMLElement;
@@ -9,23 +10,9 @@ export class SuccessView extends Component<IOrderResponse> {
   constructor(container: HTMLElement) {
     super(container);
 
-    const titleElement = this.container.querySelector('.order-success__title');
-    if (!(titleElement instanceof HTMLElement)) {
-      throw new Error('Элемент заголовка успешного оформления не найден');
-    }
-    this.titleElement = titleElement;
-
-    const descriptionElement = this.container.querySelector('.order-success__description');
-    if (!(descriptionElement instanceof HTMLElement)) {
-      throw new Error('Элемент описания успешного оформления не найден');
-    }
-    this.descriptionElement = descriptionElement;
-
-    const closeButton = this.container.querySelector('.order-success__close');
-    if (!(closeButton instanceof HTMLButtonElement)) {
-      throw new Error('Кнопка закрытия успешного оформления не найдена');
-    }
-    this.closeButton = closeButton;
+    this.titleElement = ensureElement<HTMLElement>('.order-success__title', this.container);
+    this.descriptionElement = ensureElement<HTMLElement>('.order-success__description', this.container);
+    this.closeButton = ensureElement<HTMLButtonElement>('.order-success__close', this.container);
   }
 
   setTotalPrice(total: number): void {

@@ -1,5 +1,6 @@
 import { Component } from '../base/Component';
 import { IBasketCount } from '../../types/index';
+import { ensureElement } from '../../utils/utils';
 
 export class HeaderCartView extends Component<IBasketCount> {
   private basketButton: HTMLButtonElement;
@@ -9,12 +10,7 @@ export class HeaderCartView extends Component<IBasketCount> {
     super(container);
 
     this.basketButton = container;
-
-    const basketCounter = this.basketButton.querySelector('.header__basket-counter');
-    if (!(basketCounter instanceof HTMLElement)) {
-      throw new Error('В шапке сайта не найден счетчик товаров в корзине');
-    }
-    this.basketCounter = basketCounter;
+    this.basketCounter = ensureElement('.header__basket-counter', this.basketButton);
   }
 
   set count(count: number) {
