@@ -3,14 +3,12 @@ import { IOrderResponse } from '../../types/index';
 import { ensureElement } from '../../utils/utils';
 
 export class SuccessView extends Component<IOrderResponse> {
-  private titleElement: HTMLElement;
   private descriptionElement: HTMLElement;
   private closeButton: HTMLButtonElement;
 
   constructor(container: HTMLElement) {
     super(container);
 
-    this.titleElement = ensureElement<HTMLElement>('.order-success__title', this.container);
     this.descriptionElement = ensureElement<HTMLElement>('.order-success__description', this.container);
     this.closeButton = ensureElement<HTMLButtonElement>('.order-success__close', this.container);
   }

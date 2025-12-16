@@ -15,22 +15,22 @@ export class Customer {
   saveData(data: Partial<IBuyer>): void {
     let changed = false;
     
-    if (data.payment) {
+    if (data.payment !== undefined) {
       this.payment = data.payment;
       changed = true;
     }
       
-    if (data.email) {
+    if (data.email !== undefined) {
       this.email = data.email;
       changed = true;
     }
       
-    if (data.phone) {
+    if (data.phone !== undefined) {
       this.phone = data.phone;
       changed = true;
     }
       
-    if (data.address) {
+    if (data.address !== undefined) {
       this.address = data.address;
       changed = true;
     }
@@ -41,36 +41,36 @@ export class Customer {
   }
 
   getData(fields?: (keyof IBuyer)[]): Partial<IBuyer> {
-  if (fields && fields.length) {
-    const result: Partial<IBuyer> = {};
+    if (fields && fields.length) {
+      const result: Partial<IBuyer> = {};
 
-    fields.forEach(field => {
-      switch (field) {
-        case 'payment':
-          result.payment = this.payment;
-          break;
-        case 'email':
-          result.email = this.email;
-          break;
-        case 'phone':
-          result.phone = this.phone;
-          break;
-        case 'address':
-          result.address = this.address;
-          break;
-      }
-    });
+      fields.forEach(field => {
+        switch (field) {
+          case 'payment':
+            result.payment = this.payment;
+            break;
+          case 'email':
+            result.email = this.email;
+            break;
+          case 'phone':
+            result.phone = this.phone;
+            break;
+          case 'address':
+            result.address = this.address;
+            break;
+        }
+      });
 
-    return result;
+      return result;
+    }
+
+    return {
+      payment: this.payment,
+      email: this.email,
+      phone: this.phone,
+      address: this.address
+    };
   }
-
-  return {
-    payment: this.payment,
-    email: this.email,
-    phone: this.phone,
-    address: this.address
-  }
-}
 
   clearData(): void {
     this.payment = '';

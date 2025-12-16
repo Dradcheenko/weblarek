@@ -1,7 +1,7 @@
 import { Card } from './Card';
-import { IProduct } from '../../../types';
+import { IBasketProduct } from '../../../types';
 
-export class CardBasket extends Card<IProduct> {
+export class CardBasket extends Card<IBasketProduct> {
   private indexElement: HTMLElement;
   private deleteButton: HTMLButtonElement;
   
