@@ -1,41 +1,36 @@
 import { Form } from './Form';
 import { IBuyer, TPayment } from '../../../types';
+import { EventEmitter } from '../../base/Events';
+import { ensureElement } from '../../../utils/utils';
 
 export class OrderForm extends Form<Partial<IBuyer>> {
   private cardButton: HTMLButtonElement;
   private cashButton: HTMLButtonElement;
   private addressInput: HTMLInputElement;
+  private eventBroker?: EventEmitter;
 
-  constructor(container: HTMLElement) {
+  constructor(container: HTMLElement, eventBroker?: EventEmitter) {
     super(container);
+    this.eventBroker = eventBroker;
 
-    const cardButton = this.container.querySelector('[name="card"]');
-    if (!(cardButton instanceof HTMLButtonElement)) {
-      throw new Error('Кнопка онлайн оплаты не найдена');
-    }
-    cardButton.addEventListener('click', () => this.setPaymentMethod('card'));
-    this.cardButton = cardButton;
+    this.cardButton = ensureElement<HTMLButtonElement>('[name="card"]', this.container);
+    this.cashButton = ensureElement<HTMLButtonElement>('[name="cash"]', this.container);
+    this.addressInput = ensureElement<HTMLInputElement>('[name="address"]', this.container);
 
-    const cashButton = this.container.querySelector('[name="cash"]');
-    if (!(cashButton instanceof HTMLButtonElement)) {
-      throw new Error('Кнопка оплаты наличными не найдена');
-    }
-    cashButton.addEventListener('click', () => this.setPaymentMethod('cash'));
-    this.cashButton = cashButton;
+    this.cardButton.addEventListener('click', () => this.handlePaymentClick('card'));
+    this.cashButton.addEventListener('click', () => this.handlePaymentClick('cash'));
+    this.addressInput.addEventListener('input', () => this.emitChange('address', this.addressInput.value));
 
-    const addressInput = this.container.querySelector('[name="address"]');
-    if (!(addressInput instanceof HTMLInputElement)) {
-      throw new Error('Поле для адреса не найдено');
-    }
-    this.addressInput = addressInput;
+    this.form.addEventListener('submit', (event: SubmitEvent) => {
+      event.preventDefault();
+      this.eventBroker?.emit('form:contacts-open');
+    });
   }
 
   setPaymentMethod(method: TPayment): void {
-    // Сбрасываем активное состояние
     this.cardButton.classList.remove('button_alt-active');
     this.cashButton.classList.remove('button_alt-active');
 
-    // Устанавливаем активное состояние
     if (method === 'card') {
       this.cardButton.classList.add('button_alt-active');
     } else if (method === 'cash') {
@@ -47,17 +42,16 @@ export class OrderForm extends Form<Partial<IBuyer>> {
     this.addressInput.value = address;
   }
 
-  setInputHandler(handler: (field: keyof Partial<IBuyer>, value: string) => void): void {
-    this.cardButton.addEventListener('click', () => handler('payment', 'card'));
-    this.cashButton.addEventListener('click', () => handler('payment', 'cash'));
-    this.addressInput.addEventListener('input', () => handler('address', this.addressInput.value));
+  setInputHandler(): void {
+    // Слушатели навешаны в конструкторе через event broker
   }
 
-  getData(): Partial<IBuyer> {
-    const formData = new FormData(this.form);
-    return {
-      payment: formData.get('payment') as TPayment,
-      address: formData.get('address') as string
-    };
+  private emitChange(field: keyof Partial<IBuyer>, value: string): void {
+    this.eventBroker?.emit('buyer:change', { field, value });
+  }
+
+  private handlePaymentClick(method: TPayment): void {
+    this.setPaymentMethod(method);
+    this.emitChange('payment', method);
   }
 }

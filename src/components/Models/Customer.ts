@@ -36,34 +36,12 @@ export class Customer {
     }
 
     if (changed) {
-      this.eventBroker.emit('customer:changed', this.getData());
+      const data = this.getData();
+      this.eventBroker.emit('order:update', data);
     }
   }
 
-  getData(fields?: (keyof IBuyer)[]): Partial<IBuyer> {
-    if (fields && fields.length) {
-      const result: Partial<IBuyer> = {};
-
-      fields.forEach(field => {
-        switch (field) {
-          case 'payment':
-            result.payment = this.payment;
-            break;
-          case 'email':
-            result.email = this.email;
-            break;
-          case 'phone':
-            result.phone = this.phone;
-            break;
-          case 'address':
-            result.address = this.address;
-            break;
-        }
-      });
-
-      return result;
-    }
-
+  getData(): IBuyer {
     return {
       payment: this.payment,
       email: this.email,
@@ -78,8 +56,8 @@ export class Customer {
     this.phone = '';
     this.address = '';
 
-    this.eventBroker.emit('customer:changed', this.getData());
-    this.eventBroker.emit('customer:cleared');
+    const data = this.getData();
+    this.eventBroker.emit('order:update', data);
   }
 
   validate(data: Partial<IBuyer>): IValidResult {

@@ -44,7 +44,5 @@ export abstract class Form<T> extends Component<T> {
     this.setDisabled(this.submitButton, disabled);
   }
 
-  abstract getData(): T;
-
   abstract setInputHandler(handler: (field: keyof Partial<IBuyer>, value: string) => void): void;
 }

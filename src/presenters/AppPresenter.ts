@@ -3,6 +3,7 @@ import { Cart } from '../components/Models/Cart';
 import { Catalog } from '../components/Models/Catalog';
 import { Customer } from '../components/Models/Customer';
 import { BasketView } from '../components/Views/BasketView';
+import { GalleryView } from '../components/Views/GalleryView';
 import { HeaderCartView } from '../components/Views/HeaderCartView';
 import { ModalView } from '../components/Views/ModalView';
 import { CardBasket } from '../components/Views/cards/CardBasket';
@@ -12,46 +13,58 @@ import { ContactsForm } from '../components/Views/forms/ContactsForm';
 import { OrderForm } from '../components/Views/forms/OrderForm';
 import { SuccessView } from '../components/Views/SuccessView';
 import { EventEmitter } from '../components/base/Events';
-import { IBuyer, IOrderRequest, IProduct, IValidResult, ITimer } from '../types';
-import { apiProducts } from '../utils/data';
-import { cloneTemplate, debounce, ensureElement } from '../utils/utils';
+import { IBuyer, IOrderRequest, IProduct } from '../types';
 
-type FormName = 'order' | 'contacts';
+type ViewFactories = {
+  createCatalogCard: () => CardCatalog;
+  createBasketItem: () => CardBasket;
+  createOrderForm: () => OrderForm;
+  createContactsForm: () => ContactsForm;
+  createSuccessView: () => SuccessView;
+};
 
-/**
- * Presenter, связывающий модели и представления приложения.
- */
 export class AppPresenter {
   private readonly modal: ModalView;
   private readonly header: HeaderCartView;
   private readonly basketView: BasketView;
-  private readonly gallery: HTMLElement;
-  private readonly timer: ITimer = { delay: 800, timeoutId: null };
-  private readonly templates: Record<string, HTMLTemplateElement>;
-  private readonly basketRoot: HTMLElement;
+  private readonly gallery: GalleryView;
+  private readonly preview: CardPreview;
+  private previewProduct: IProduct | null = null;
+  private readonly orderForm: OrderForm;
+  private readonly contactsForm: ContactsForm;
+  private readonly successView: SuccessView;
+  private readonly viewFactories: ViewFactories;
 
   constructor(
     private readonly catalogModel: Catalog,
     private readonly cartModel: Cart,
     private readonly customerModel: Customer,
     private readonly apiClient: ApiClient,
-    private readonly eventBroker: EventEmitter
+    private readonly eventBroker: EventEmitter,
+    views: {
+      modal: ModalView;
+      header: HeaderCartView;
+      basketView: BasketView;
+      gallery: GalleryView;
+      preview: CardPreview;
+    },
+    viewFactories: ViewFactories
   ) {
-    this.modal = new ModalView(this.eventBroker);
-    this.header = new HeaderCartView(ensureElement<HTMLButtonElement>('.header__basket'));
-    this.templates = {
-      catalog: ensureElement<HTMLTemplateElement>('#card-catalog'),
-      preview: ensureElement<HTMLTemplateElement>('#card-preview'),
-      basket: ensureElement<HTMLTemplateElement>('#basket'),
-      basketItem: ensureElement<HTMLTemplateElement>('#card-basket'),
-      order: ensureElement<HTMLTemplateElement>('#order'),
-      contacts: ensureElement<HTMLTemplateElement>('#contacts'),
-      success: ensureElement<HTMLTemplateElement>('#success')
-    };
+    this.modal = views.modal;
+    this.header = views.header;
+    this.basketView = views.basketView;
+    this.gallery = views.gallery;
+    this.preview = views.preview;
+    this.viewFactories = viewFactories;
+    this.orderForm = this.viewFactories.createOrderForm();
+    this.contactsForm = this.viewFactories.createContactsForm();
+    this.successView = this.viewFactories.createSuccessView();
 
-    this.gallery = ensureElement<HTMLElement>('.gallery');
-    this.basketRoot = cloneTemplate<HTMLElement>(this.templates.basket);
-    this.basketView = new BasketView(this.basketRoot, this.eventBroker);
+    this.preview.setButtonHandler(() => {
+      if (this.previewProduct) {
+        this.toggleCartItem(this.previewProduct);
+      }
+    });
 
     this.bindEvents();
   }
@@ -64,23 +77,30 @@ export class AppPresenter {
   }
 
   private bindEvents(): void {
-    this.header.setBasketClickHandler(() => this.openBasket());
+    this.eventBroker.on('basket:open', () => this.openBasket());
 
-    this.catalogModel.eventBroker.on('catalog:changed', () => this.renderCatalog());
-    this.catalogModel.eventBroker.on('catalog:product-selected', (product: IProduct) => this.openPreview(product));
+    this.eventBroker.on('catalog:changed', () => this.eventBroker.emit('products:update'));
+    this.eventBroker.on('products:update', () => this.renderCatalog());
+    this.eventBroker.on('catalog:product-selected', (product: IProduct) => this.openPreview(product));
 
-    this.cartModel.eventBroker.on('cart:changed', () => {
+    this.eventBroker.on('cart:changed', () => {
       this.header.count = this.cartModel.getTotalCount();
-
-      if (this.basketView.isOpen) {
-        this.updateBasket();
-      }
+      this.updateBasket();
     });
 
-    this.basketView.setOrderHandler(() => {
-      this.showForm('order', ['payment', 'address']);
+    this.eventBroker.on('order:open', () => {
+      this.showOrderForm();
       this.basketView.isOpen = false;
     });
+
+    this.eventBroker.on('form:contacts-open', () => this.showContactsForm());
+    this.eventBroker.on('order:submit', () => this.sendOrder());
+
+    this.eventBroker.on('buyer:change', (data: { field: keyof IBuyer; value: string }) => {
+      this.customerModel.saveData({ [data.field]: data.value } as Partial<IBuyer>);
+    });
+
+    this.eventBroker.on('order:update', () => this.applyBuyerState());
 
     this.modal.setCloseHandler(() => {
       this.modal.close();
@@ -93,30 +113,27 @@ export class AppPresenter {
       const products = await this.apiClient.getProductList();
       this.catalogModel.saveProducts(products.items);
     } catch (error) {
-      console.error('Ошибка загрузки товаров, используем локальные данные:', error);
-      this.catalogModel.saveProducts(apiProducts.items);
+      console.error('Ошибка загрузки товаров с сервера:', error);
     }
   }
 
   private renderCatalog(): void {
-    this.gallery.innerHTML = '';
     const products = this.catalogModel.getProducts();
-
-    products.forEach(product => {
-      const card = new CardCatalog(cloneTemplate<HTMLElement>(this.templates.catalog));
+    const items = products.map(product => {
+      const card = this.viewFactories.createCatalogCard();
 
       card.setButtonHandler(() => this.catalogModel.setCurrentProduct(product));
-      this.gallery.append(card.render(product));
+      return card.render(product);
     });
+
+    this.gallery.items = items;
   }
 
   private openPreview(product: IProduct): void {
-    const preview = new CardPreview(cloneTemplate<HTMLElement>(this.templates.preview));
+    this.previewProduct = product;
+    this.setPreviewButtonState(this.preview, product);
 
-    this.setPreviewButtonState(preview, product);
-    preview.setButtonHandler(() => this.toggleCartItem(product, preview));
-
-    this.modal.open(preview.render(product));
+    this.modal.open(this.preview.render(product));
   }
 
   private setPreviewButtonState(preview: CardPreview, product: IProduct): void {
@@ -129,30 +146,29 @@ export class AppPresenter {
     preview.setButtonDisabled(false);
   }
 
-  private toggleCartItem(product: IProduct, preview: CardPreview): void {
+  private toggleCartItem(product: IProduct): void {
     if (product.price === null) {
       return;
     }
 
     if (this.cartModel.isInCart(product.id)) {
       this.cartModel.removeItem(product);
-      preview.setButtonText('В корзину');
     } else {
       this.cartModel.addItem(product);
-      preview.setButtonText('Удалить из корзины');
     }
+
+    this.modal.close();
   }
 
   private openBasket(): void {
-    this.updateBasket();
     this.basketView.isOpen = true;
-    this.modal.open(this.basketRoot);
+    this.modal.open(this.basketView.render());
   }
 
   private updateBasket(): void {
     const items = this.cartModel.getItems();
     const elements = items.map((item, index) => {
-      const basketCard = new CardBasket(cloneTemplate<HTMLElement>(this.templates.basketItem));
+      const basketCard = this.viewFactories.createBasketItem();
       basketCard.setDeleteHandler(() => this.cartModel.removeItem(item));
 
       return basketCard.render({
@@ -166,41 +182,14 @@ export class AppPresenter {
     this.basketView.setButtonDisabled(items.length === 0);
   }
 
-  private showForm(templateName: FormName, customerParams?: (keyof IBuyer)[]): void {
-    const form = this.getFormInstance(templateName);
-    const customerData = this.customerModel.getData(customerParams);
-
-    this.restoreFormData(form, customerData);
-
-    const validate = () => this.validateForm(form, customerParams);
-    const debouncedValidate = debounce(validate, this.timer);
-
-    form.setInputHandler((field, value) => {
-      this.customerModel.saveData({ [field]: value });
-      debouncedValidate();
-    });
-
-    form.setSubmitHandler((event: SubmitEvent) => {
-      event.preventDefault();
-      if (templateName === 'contacts') {
-        this.sendOrder();
-      } else {
-        this.showForm('contacts', ['email', 'phone']);
-      }
-    });
-
-    validate();
-    this.modal.open(form.render());
+  private showOrderForm(): void {
+    this.applyBuyerState();
+    this.modal.open(this.orderForm.render());
   }
 
-  private getFormInstance(templateName: FormName): OrderForm | ContactsForm {
-    switch (templateName) {
-      case 'order':
-        return new OrderForm(cloneTemplate<HTMLElement>(this.templates.order));
-      case 'contacts':
-      default:
-        return new ContactsForm(cloneTemplate<HTMLElement>(this.templates.contacts), this.eventBroker);
-    }
+  private showContactsForm(): void {
+    this.applyBuyerState();
+    this.modal.open(this.contactsForm.render());
   }
 
   private restoreFormData(form: OrderForm | ContactsForm, customer: Partial<IBuyer>): void {
@@ -223,19 +212,25 @@ export class AppPresenter {
     }
   }
 
-  private validateForm(form: OrderForm | ContactsForm, fields?: (keyof IBuyer)[]): void {
-    const result = this.customerModel.validate(this.customerModel.getData(fields));
-    this.applyValidation(form, result);
-  }
+  private applyBuyerState(): void {
+    const data = this.customerModel.getData() as IBuyer;
+    const validation = this.customerModel.validate(data);
 
-  private applyValidation(form: OrderForm | ContactsForm, validation: IValidResult): void {
-    form.setButtonState(!validation.isValid);
+    this.restoreFormData(this.orderForm, data);
+    const orderErrors = {
+      payment: validation.errors.payment,
+      address: validation.errors.address
+    };
+    this.orderForm.setValidations(orderErrors);
+    this.orderForm.setButtonState(!!(orderErrors.payment || orderErrors.address));
 
-    if (Object.keys(validation.errors).length) {
-      form.setValidations(validation.errors);
-    } else {
-      form.setValidations();
-    }
+    this.restoreFormData(this.contactsForm, data);
+    const contactsErrors = {
+      email: validation.errors.email,
+      phone: validation.errors.phone
+    };
+    this.contactsForm.setValidations(contactsErrors);
+    this.contactsForm.setButtonState(!!(contactsErrors.email || contactsErrors.phone));
   }
 
   private async sendOrder(): Promise<void> {
@@ -257,10 +252,8 @@ export class AppPresenter {
   }
 
   private showSuccess(total: number): void {
-    const successView = new SuccessView(cloneTemplate<HTMLElement>(this.templates.success));
-    successView.setTotalPrice(total);
-    successView.setCloseHandler(() => this.modal.close());
-
-    this.modal.open(successView.render());
+    this.successView.setTotalPrice(total);
+    this.successView.setCloseHandler(() => this.modal.close());
+    this.modal.open(this.successView.render());
   }
 }

@@ -12,11 +12,18 @@ export class ContactsForm extends Form<IBuyer> {
     super(container);
     this.eventBroker = eventBroker;
 
-    this.emailInput = ensureElement<HTMLInputElement>('[name=\"email\"]', this.container);
-    this.phoneInput = ensureElement<HTMLInputElement>('[name=\"phone\"]', this.container);
+    this.emailInput = ensureElement<HTMLInputElement>('[name="email"]', this.container);
+    this.phoneInput = ensureElement<HTMLInputElement>('[name="phone"]', this.container);
+
+    this.emailInput.addEventListener('input', () => this.emitChange('email', this.emailInput.value));
+    this.phoneInput.addEventListener('input', () => this.emitChange('phone', this.phoneInput.value));
+
+    this.form.addEventListener('submit', (event: SubmitEvent) => {
+      event.preventDefault();
+      this.eventBroker?.emit('order:submit');
+    });
   }
 
-  // Методы для обновления полей формы извне (например, presenter)
   setEmail(email: string): void {
     this.emailInput.value = email;
   }
@@ -25,24 +32,11 @@ export class ContactsForm extends Form<IBuyer> {
     this.phoneInput.value = phone;
   }
 
-  setInputHandler(handler: (field: keyof Partial<IBuyer>, value: string) => void): void {
-    this.emailInput.addEventListener('input', () => {
-      handler('email', this.emailInput.value);
-      this.eventBroker?.emit('buyer:change', { field: 'email', value: this.emailInput.value });
-    });
-    this.phoneInput.addEventListener('input', () => {
-      handler('phone', this.phoneInput.value);
-      this.eventBroker?.emit('buyer:change', { field: 'phone', value: this.phoneInput.value });
-    });
+  setInputHandler(): void {
+    // Слушатели навешаны в конструкторе через event broker
   }
 
-  getData(): IBuyer {
-    const formData = new FormData(this.form);
-    return {
-      payment: '' as IBuyer['payment'],
-      email: (formData.get('email') as string) || '',
-      phone: (formData.get('phone') as string) || '',
-      address: ''
-    };
+  private emitChange(field: keyof Partial<IBuyer>, value: string): void {
+    this.eventBroker?.emit('buyer:change', { field, value });
   }
 }

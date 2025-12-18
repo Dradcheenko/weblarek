@@ -3,6 +3,7 @@ import { CardFullInfo } from './CardFullInfo';
 export class CardPreview extends CardFullInfo {
   private descriptionElement: HTMLElement;
   private button: HTMLButtonElement;
+  private buttonHandler?: (event: MouseEvent) => void;
   
   constructor(container: HTMLElement) {
     super(container);
@@ -33,6 +34,10 @@ export class CardPreview extends CardFullInfo {
   }
 
   setButtonHandler(handler: (event: MouseEvent) => void): void {
+    if (this.buttonHandler) {
+      this.button.removeEventListener('click', this.buttonHandler);
+    }
+    this.buttonHandler = handler;
     this.button.addEventListener('click', handler);
   }
 }

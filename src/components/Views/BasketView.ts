@@ -16,6 +16,10 @@ export class BasketView extends Component<unknown> {
     this.listElement = ensureElement('.basket__list', this.container);
     this.priceElement = ensureElement('.basket__price', this.container);
     this.button = ensureElement<HTMLButtonElement>('.basket__button', this.container);
+
+    this.button.addEventListener('click', () => {
+      this.eventBroker.emit('order:open');
+    });
   }
 
   /**
@@ -35,7 +39,7 @@ export class BasketView extends Component<unknown> {
     this.setDisabled(this.button, disabled);
   }
 
-  setOrderHandler(handler: (event: MouseEvent) => void): void {
-    this.button.addEventListener('click', handler);
+  get element(): HTMLElement {
+    return this.container;
   }
 }

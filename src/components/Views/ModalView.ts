@@ -24,7 +24,6 @@ export class ModalView {
   close(): void {
     this.container.classList.remove('modal_active');
     this.contentElement.innerHTML = '';
-    this.eventBroker.emit('modal:close');
   }
 
   setCloseHandler(handler: (event: MouseEvent) => void): void {
