@@ -7,7 +7,6 @@ export class BasketView extends Component<unknown> {
   private priceElement: HTMLElement;
   private button: HTMLButtonElement;
   public eventBroker: EventEmitter;
-  public isOpen: boolean = false;
 
   constructor(container: HTMLElement, eventBroker: EventEmitter) {
     super(container);

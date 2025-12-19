@@ -90,7 +90,6 @@ export class AppPresenter {
 
     this.eventBroker.on('order:open', () => {
       this.showOrderForm();
-      this.basketView.isOpen = false;
     });
 
     this.eventBroker.on('form:contacts-open', () => this.showContactsForm());
@@ -104,7 +103,6 @@ export class AppPresenter {
 
     this.modal.setCloseHandler(() => {
       this.modal.close();
-      this.basketView.isOpen = false;
     });
   }
 
@@ -161,7 +159,6 @@ export class AppPresenter {
   }
 
   private openBasket(): void {
-    this.basketView.isOpen = true;
     this.modal.open(this.basketView.render());
   }
 

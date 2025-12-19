@@ -93,8 +93,6 @@ export class Customer {
       }
     }
 
-    this.eventBroker.emit('customer:validated', { isValid, errors, data });
-
     return { isValid, errors, data };
   }
 }
